@@ -2,7 +2,7 @@
  * Les lectures et écritures des parties : game, player, answer. Tout le SQL
  * sur ces tables vit ici — nulle part ailleurs.
  */
-import { db } from './db.js';
+import { db } from "./db.js";
 
 // ── Les trois fonctions à écrire cette semaine ────────────────────────────
 
@@ -35,52 +35,52 @@ export function addPlayer(gameId, nickname) {
 
 /** La partie qui porte ce code, ou undefined. */
 export function findGameByCode(code) {
-  return db.prepare('SELECT * FROM game WHERE code = ?').get(code);
+	return db.prepare("SELECT * FROM game WHERE code = ?").get(code);
 }
 
 /** Le joueur qui porte ce pseudonyme dans cette partie, ou undefined. */
 export function findPlayer(gameId, nickname) {
-  return db
-    .prepare('SELECT * FROM player WHERE game_id = ? AND nickname = ?')
-    .get(gameId, nickname);
+	return db
+		.prepare("SELECT * FROM player WHERE game_id = ? AND nickname = ?")
+		.get(gameId, nickname);
 }
 
 /** Les joueurs d'une partie, classés : meilleur score, puis alphabétique. */
 export function getPlayers(gameId) {
-  return db
-    .prepare(
-      `SELECT id, nickname, score
+	return db
+		.prepare(
+			`SELECT id, nickname, score
          FROM player
         WHERE game_id = ?
         ORDER BY score DESC, nickname`,
-    )
-    .all(gameId);
+		)
+		.all(gameId);
 }
 
 /** La réponse d'un joueur à une question, ou undefined s'il n'a pas répondu. */
 export function findAnswer(gameId, playerId, questionId) {
-  return db
-    .prepare('SELECT * FROM answer WHERE game_id = ? AND player_id = ? AND question_id = ?')
-    .get(gameId, playerId, questionId);
+	return db
+		.prepare("SELECT * FROM answer WHERE game_id = ? AND player_id = ? AND question_id = ?")
+		.get(gameId, playerId, questionId);
 }
 
 /** Les réponses reçues pour une question, en ordre d'arrivée (horloge du serveur). */
 export function getAnswersForQuestion(gameId, questionId) {
-  return db
-    .prepare(
-      `SELECT id, player_id, choice_id, answered_at
+	return db
+		.prepare(
+			`SELECT id, player_id, choice_id, answered_at
          FROM answer
         WHERE game_id = ? AND question_id = ?
         ORDER BY answered_at, id`,
-    )
-    .all(gameId, questionId);
+		)
+		.all(gameId, questionId);
 }
 
 /** Combien de réponses reçues pour une question. */
 export function countAnswers(gameId, questionId) {
-  return db
-    .prepare('SELECT COUNT(*) AS n FROM answer WHERE game_id = ? AND question_id = ?')
-    .get(gameId, questionId).n;
+	return db
+		.prepare("SELECT COUNT(*) AS n FROM answer WHERE game_id = ? AND question_id = ?")
+		.get(gameId, questionId).n;
 }
 
 // ── Fournies : les écritures en cours de partie ───────────────────────────
@@ -92,28 +92,28 @@ export function countAnswers(gameId, questionId) {
  * @returns {number} l'id de la réponse enregistrée
  */
 export function recordAnswer(gameId, playerId, questionId, choiceId, answeredAt) {
-  const result = db
-    .prepare(
-      `INSERT INTO answer (game_id, player_id, question_id, choice_id, answered_at)
+	const result = db
+		.prepare(
+			`INSERT INTO answer (game_id, player_id, question_id, choice_id, answered_at)
        VALUES (?, ?, ?, ?, ?)`,
-    )
-    .run(gameId, playerId, questionId, choiceId, answeredAt);
-  return result.lastInsertRowid;
+		)
+		.run(gameId, playerId, questionId, choiceId, answeredAt);
+	return result.lastInsertRowid;
 }
 
 /** Fait avancer la machine à états d'une partie, d'un seul UPDATE. */
 export function updateGameState(gameId, state, questionIndex, questionStartedAt) {
-  db.prepare(
-    'UPDATE game SET state = ?, question_index = ?, question_started_at = ? WHERE id = ?',
-  ).run(state, questionIndex, questionStartedAt, gameId);
+	db.prepare(
+		"UPDATE game SET state = ?, question_index = ?, question_started_at = ? WHERE id = ?",
+	).run(state, questionIndex, questionStartedAt, gameId);
 }
 
 /** Inscrit les points obtenus par une réponse, une fois la question close. */
 export function setAnswerPoints(answerId, points) {
-  db.prepare('UPDATE answer SET points = ? WHERE id = ?').run(points, answerId);
+	db.prepare("UPDATE answer SET points = ? WHERE id = ?").run(points, answerId);
 }
 
 /** Ajoute des points au total d'un joueur. */
 export function addPointsToPlayer(playerId, points) {
-  db.prepare('UPDATE player SET score = score + ? WHERE id = ?').run(points, playerId);
+	db.prepare("UPDATE player SET score = score + ? WHERE id = ?").run(points, playerId);
 }
