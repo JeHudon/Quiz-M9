@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLoaderData } from 'react-router';
 import { fetchQuizzes } from '../api.js';
 
 /**
@@ -19,12 +19,18 @@ import { fetchQuizzes } from '../api.js';
  *    const quizzes = useLoaderData();
  * 3. Réaffichez la source de la page : les titres y sont, déjà en HTML.
  */
-export default function Quizzes() {
-  const [quizzes, setQuizzes] = useState([]);
 
-  useEffect(() => {
-    fetchQuizzes().then(setQuizzes).catch(() => {});
-  }, []);
+export async function loader() {
+  // Ici, pas de relais Vite : on appelle l'API par son adresse complète.
+  const response = await fetch('http://localhost:3000/api/quizzes');
+  if (!response.ok) {
+    throw new Error(`L'API répond ${response.status}.`);
+  }
+  return response.json();
+}
+
+export default function Quizzes() {
+  const quizzes = useLoaderData();
 
   return (
     <main className="screen">

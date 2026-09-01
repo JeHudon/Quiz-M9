@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router';
-import { fetchQuiz } from '../api.js';
+import { useEffect, useState } from "react";
+import { Link, useLoaderData } from "react-router";
+import { fetchQuiz } from "../api.js";
 
 /**
  * Un questionnaire et ses questions — ce que l'animateur vérifie avant de
@@ -15,37 +15,42 @@ import { fetchQuiz } from '../api.js';
  * 3. Dans le composant, remplacez useParams + useState + useEffect par
  *    const quiz = useLoaderData();
  */
+
+export async function loader({ params}) {
+	// Ici, pas de relais Vite : on appelle l'API par son adresse complète.
+	const response = await fetch(`http://localhost:3000/api/quizzes/${params.id}`);
+	if (!response.ok) {
+		throw new Error("Questionnaire introuvable.", { status: 404 });
+	}
+	return response.json();
+}
+
 export default function QuizDetails() {
-  const { id } = useParams();
-  const [quiz, setQuiz] = useState(null);
+	const quiz = useLoaderData();
 
-  useEffect(() => {
-    fetchQuiz(id).then(setQuiz).catch(() => {});
-  }, [id]);
+	if (!quiz) return <main className="screen">Chargement…</main>;
 
-  if (!quiz) return <main className="screen">Chargement…</main>;
-
-  return (
-    <main className="screen">
-      <h1>{quiz.title}</h1>
-      <p>
-        <Link to="/quizzes">← Mes questionnaires</Link>
-      </p>
-      {quiz.questions.map((question, i) => (
-        <section key={question.id} className="card question">
-          <h2>
-            {i + 1}. {question.text}
-          </h2>
-          <p className="progress">{question.durationSeconds} secondes</p>
-          <ul className="choice-list">
-            {question.choices.map((choice) => (
-              <li key={choice.id} className={choice.isCorrect ? 'correct' : ''}>
-                {choice.text} {choice.isCorrect && '✓'}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-    </main>
-  );
+	return (
+		<main className="screen">
+			<h1>{quiz.title}</h1>
+			<p>
+				<Link to="/quizzes">← Mes questionnaires</Link>
+			</p>
+			{quiz.questions.map((question, i) => (
+				<section key={question.id} className="card question">
+					<h2>
+						{i + 1}. {question.text}
+					</h2>
+					<p className="progress">{question.durationSeconds} secondes</p>
+					<ul className="choice-list">
+						{question.choices.map((choice) => (
+							<li key={choice.id} className={choice.isCorrect ? "correct" : ""}>
+								{choice.text} {choice.isCorrect && "✓"}
+							</li>
+						))}
+					</ul>
+				</section>
+			))}
+		</main>
+	);
 }
