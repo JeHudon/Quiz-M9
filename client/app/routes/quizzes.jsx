@@ -1,33 +1,39 @@
-import { useEffect, useState } from 'react';
-import { Link, useLoaderData } from 'react-router';
+
+import { Form, Link, useLoaderData } from 'react-router';
 import { fetchQuizzes } from '../api.js';
+import { API_URL } from '../api-url.js';
 
 /**
  * La liste de l'animateur : ses questionnaires. (Tous, en fait — les
  * comptes arrivent à la semaine 5.)
  *
- * TODO (partie 2, jalon ①) : passer du rendu côté client au rendu côté
- * serveur. Pour l'instant, la page part vide et va chercher ses données
- * dans le navigateur, après le rendu — affichez la source de la page : les
- * questionnaires n'y sont pas. Reprenez le loader écrit ensemble au
- * tableau :
- *
- * 1. Exportez une fonction `loader` : elle s'exécute sur le serveur, AVANT
- *    le rendu. Elle appelle l'API par son adresse complète —
- *    fetch('http://localhost:3000/api/quizzes') — et retourne le JSON.
- * 2. Dans le composant, remplacez useState + useEffect par
- *    const quizzes = useLoaderData();
- * 3. Réaffichez la source de la page : les titres y sont, déjà en HTML.
+ * Rendu CÔTÉ SERVEUR : le loader s'exécute sur le serveur, AVANT le rendu.
  */
-
 export async function loader() {
-  // Ici, pas de relais Vite : on appelle l'API par son adresse complète.
-  const response = await fetch('http://localhost:3000/api/quizzes');
+  const response = await fetch(`${API_URL}/api/quizzes`);
   if (!response.ok) {
     throw new Error(`L'API répond ${response.status}.`);
   }
   return response.json();
 }
+
+/**
+ * TODO (jalon ①) : l'action qui crée un questionnaire.
+ *
+ * React Router l'appelle quand le <Form method="post"> ci-dessous est
+ * envoyé. Elle s'exécute sur le serveur, comme le loader.
+ *
+ * 1. Lire le formulaire : const formData = await request.formData();
+ *    le titre est formData.get('title').
+ * 2. Appeler POST /api/quizzes (adresse complète, ${API_URL}/api/quizzes),
+ *    avec un corps JSON { title } et l'en-tête content-type.
+ * 3. Si l'API répond 400, retourner l'erreur à la page :
+ *    return data({ error: body.error }, { status: 400 });
+ * 4. Sinon, envoyer l'auteur vers l'éditeur du nouveau questionnaire :
+ *    return redirect(`/quizzes/${body.id}/edit`);
+ *
+ * Imports nécessaires : data et redirect, de 'react-router'.
+ */
 
 export default function Quizzes() {
   const quizzes = useLoaderData();
@@ -48,6 +54,19 @@ export default function Quizzes() {
           </li>
         ))}
       </ul>
+
+      {/* Un formulaire HTML classique : method et action, comme au livre
+          d'or. <Form> de React Router l'envoie à l'action de cette route
+          sans recharger la page — et rejoue le loader ensuite. */}
+      <Form method="post" className="card">
+        <h2>Nouveau questionnaire</h2>
+        <label>
+          Titre
+          <input name="title" placeholder="Titre du questionnaire" required />
+        </label>
+        {/* TODO (jalon ③) : afficher l'erreur renvoyée par l'action, s'il y en a une. */}
+        <button>Créer</button>
+      </Form>
     </main>
   );
 }
