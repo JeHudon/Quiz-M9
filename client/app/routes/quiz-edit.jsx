@@ -1,4 +1,4 @@
-import { Form, Link, useLoaderData } from 'react-router';
+import { Form, Link, data, useLoaderData } from 'react-router';
 import { API_URL } from '../api-url.js';
 
 /**
@@ -16,7 +16,11 @@ import { API_URL } from '../api-url.js';
  * 404 si le questionnaire n'existe pas, sinon le JSON.
  */
 export async function loader({ params }) {
-  throw new Response('À faire : le loader de l’éditeur.', { status: 501 });
+  const response = await fetch(`${API_URL}/api/quizzes/${params.id}`);
+  if (!response.ok) {
+    throw new Response('Questionnaire introuvable.', { status: 404 });
+  }
+  return response.json();
 }
 
 /**
@@ -44,6 +48,48 @@ export async function loader({ params }) {
  * par DELETE ${API_URL}/api/quizzes/${params.id}/questions/${questionId}).
  */
 
+export async function action({ request, params }) {
+  // 1. Les champs du formulaire, par leur attribut name.
+  const formData = await request.formData();
+  const questionId = formData.get('questionId');
+
+  if (formData.get('intent') === 'delete') {
+    const response = await fetch(`${API_URL}/api/quizzes/${params.id}/questions/${questionId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const body = await response.json();
+      return data({ error: body.error }, { status: response.status });
+    }
+    return { deleted: true };
+  }
+
+  const choices = [1, 2, 3, 4]
+          .map((n) => ({ text: formData.get(`choice${n}`) ?? '',
+                        isCorrect: formData.get('correct') === String(n) }))
+          .filter((c) => c.text.trim() !== '');
+
+  // 2. L'écriture passe par l'API : l'action ne parle pas à la base.
+  const response = await fetch(`${API_URL}/api/quizzes/${params.id}/questions`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      text: formData.get('text'),
+      durationSeconds: Number(formData.get('durationSeconds')),
+      choices,
+    }),
+  });
+  const body = await response.json();
+
+  // 3. Une erreur attendue retourne à la page, avec le code de l'API.
+  if (!response.ok) {
+    return data({ error: body.error }, { status: 400 });
+  }
+
+  // 4. Créé : POST-redirect-GET, vers l'éditeur du nouveau questionnaire.
+}
+
 export default function QuizEdit() {
   const quiz = useLoaderData();
   // TODO (jalon ③) : const actionData = useActionData(); puis afficher
@@ -68,8 +114,11 @@ export default function QuizEdit() {
               {question.durationSeconds} secondes · {question.choices.length} choix
             </p>
           </div>
-          {/* TODO (jalon ④) : un <Form method="post"> avec
-              intent=delete et questionId, et un bouton Retirer. */}
+            <Form method="post">
+              <input type="hidden" name="intent" value="delete" />
+              <input type="hidden" name="questionId" value={question.id} />
+              <button>Retirer</button>
+            </Form>
         </section>
       ))}
 

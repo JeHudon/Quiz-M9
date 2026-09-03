@@ -1,6 +1,5 @@
 
-import { Form, Link, useLoaderData } from 'react-router';
-import { fetchQuizzes } from '../api.js';
+import { Form, Link, data, redirect, useActionData, useLoaderData } from 'react-router';
 import { API_URL } from '../api-url.js';
 
 /**
@@ -35,8 +34,30 @@ export async function loader() {
  * Imports nécessaires : data et redirect, de 'react-router'.
  */
 
+export async function action({ request }) {
+  // 1. Les champs du formulaire, par leur attribut name.
+  const formData = await request.formData();
+
+  // 2. L'écriture passe par l'API : l'action ne parle pas à la base.
+  const response = await fetch(`${API_URL}/api/quizzes`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ title: formData.get('title') }),
+  });
+  const body = await response.json();
+
+  // 3. Une erreur attendue retourne à la page, avec le code de l'API.
+  if (!response.ok) {
+    return data({ error: body.error }, { status: response.status });
+  }
+
+  // 4. Créé : POST-redirect-GET, vers l'éditeur du nouveau questionnaire.
+  return redirect(`/quizzes/${body.id}/edit`);
+}
+
 export default function Quizzes() {
   const quizzes = useLoaderData();
+  const actionData = useActionData(); 
 
   return (
     <main className="screen">
@@ -64,7 +85,7 @@ export default function Quizzes() {
           Titre
           <input name="title" placeholder="Titre du questionnaire" required />
         </label>
-        {/* TODO (jalon ③) : afficher l'erreur renvoyée par l'action, s'il y en a une. */}
+        {actionData?.error && <p className="error">{actionData.error}</p>}
         <button>Créer</button>
       </Form>
     </main>
