@@ -59,3 +59,5 @@ jobs:
             -t ghcr.io/$OWNER/quizm9-client:latest \
             -t ghcr.io/$OWNER/quizm9-client:$SHA .
           docker push --all-tags ghcr.io/$OWNER/quizm9-client
+
+
