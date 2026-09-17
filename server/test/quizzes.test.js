@@ -71,7 +71,7 @@ test("une question valide est ajoutée et apparaît dans GET /api/quizzes/:id", 
 
 test("une partie sur un questionnaire sans question est refusée (400)",  async () => {
   const quiz = await api.request("POST", "/api/quizzes", { title: "Capitales" });
-	const { status, data } = await api.request("POST", `/api/game`, { quizId: quiz.data.id });
+	const { status, data } = await api.request("POST", `/api/games`, { quizId: quiz.data.id });
 
   assert.equal(status, 400)
   assert.equal(typeof data.error, "string")
