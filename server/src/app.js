@@ -154,6 +154,10 @@ app.post('/api/games', (req, res) => {
   if (!repository.getQuizWithQuestions(quizId)) {
     return res.status(404).json({ error: 'Questionnaire introuvable.' });
   }
+  const questions = repository.getQuizWithQuestions(quizId).questions;
+  if (questions.length === 0) {
+    return res.status(400).json({ error: 'Le questionnaire ne contient aucune question.' });
+  }
   const game = createGame(quizId);
   res.status(201).json({ code: game.code });
 });

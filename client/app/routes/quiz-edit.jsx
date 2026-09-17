@@ -67,6 +67,48 @@ async function deleteQuestion(quizId, questionId) {
   return { deleted: true };
 }
 
+export async function action({ request, params }) {
+  // 1. Les champs du formulaire, par leur attribut name.
+  const formData = await request.formData();
+  const questionId = formData.get('questionId');
+
+  if (formData.get('intent') === 'delete') {
+    const response = await fetch(`${API_URL}/api/quizzes/${params.id}/questions/${questionId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const body = await response.json();
+      return data({ error: body.error }, { status: response.status });
+    }
+    return { deleted: true };
+  }
+
+  const choices = [1, 2, 3, 4]
+          .map((n) => ({ text: formData.get(`choice${n}`) ?? '',
+                        isCorrect: formData.get('correct') === String(n) }))
+          .filter((c) => c.text.trim() !== '');
+
+  // 2. L'écriture passe par l'API : l'action ne parle pas à la base.
+  const response = await fetch(`${API_URL}/api/quizzes/${params.id}/questions`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      text: formData.get('text'),
+      durationSeconds: Number(formData.get('durationSeconds')),
+      choices,
+    }),
+  });
+  const body = await response.json();
+
+  // 3. Une erreur attendue retourne à la page, avec le code de l'API.
+  if (!response.ok) {
+    return data({ error: body.error }, { status: 400 });
+  }
+
+  // 4. Créé : POST-redirect-GET, vers l'éditeur du nouveau questionnaire.
+}
+
 export default function QuizEdit() {
   const quiz = useLoaderData();
   const actionData = useActionData();
